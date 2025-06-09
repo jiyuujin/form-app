@@ -1,0 +1,27 @@
+name: form_app_monorepo
+repository: https://github.com/your-org/survey-app
+
+packages:
+  - packages/**
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+
+scripts:
+  analyze:
+    run: flutter analyze
+    exec:
+      concurrency: 1
+
+  test:
+    run: flutter test
+    exec:
+      concurrency: 1
+
+  build:android:
+    run: flutter build apk
+    exec:
+      concurrency: 1
+    packageFilters:
+      scope: '*form_app*'

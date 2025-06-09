@@ -1,0 +1,26 @@
+name: form_app
+description: Survey applications for some users
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^2.24.0
+  fl_chart: ^0.71.0
+  flutter_riverpod: ^2.4.9
+  go_router: ^13.0.0
+  provider: ^6.1.1
+  shared:
+    path: ../../packages/shared
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
