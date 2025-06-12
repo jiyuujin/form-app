@@ -6,6 +6,17 @@ class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  User? get currentUser => _auth.currentUser;
+
+  Future<void> signIn(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
+
   static Future<List<Organization>> getOrganizations() async {
     try {
       final snapshot = await _firestore.collection('organizations').get();
