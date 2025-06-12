@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:form_app/screens/dashboard_screen.dart';
 import 'package:form_app/screens/home_screen.dart';
 import 'package:form_app/screens/organization_selection_screen.dart';
 import 'package:form_app/screens/signin_screen.dart';
@@ -64,6 +65,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const SigninScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard/:id',
+        builder: (context, state) => DashboardScreen(
+          organizationId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: '/home',

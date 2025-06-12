@@ -61,9 +61,11 @@ class OrganizationSelectionScreen extends ConsumerWidget {
                           ),
                         ),
                         subtitle: Text(org.description),
-                        trailing: isSelected 
-                            ? const Icon(Icons.check_circle, color: Colors.green)
-                            : const Icon(Icons.arrow_forward_ios),
+                        trailing: IconButton(
+                          iconSize: 24,
+                          icon: const Icon(Icons.arrow_forward_ios),
+                          onPressed: () => context.go('/dashboard/${org.id}'),
+                        ),
                         onTap: () async {
                           await LocalStorageService.saveSelectedOrganization(org.id);
                           if (context.mounted) {
