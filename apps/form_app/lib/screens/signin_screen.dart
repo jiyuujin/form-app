@@ -28,6 +28,8 @@ class _SigninScreenState extends ConsumerState<SigninScreen> {
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _emailController,
