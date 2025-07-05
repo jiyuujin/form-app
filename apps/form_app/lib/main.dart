@@ -51,10 +51,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     redirect: (context, state) {
       final isLoggedIn = authState.asData?.value != null;
-      final isOnLoginPage = state.matchedLocation == '/login';
+      final isOnSigninPage = state.matchedLocation == '/signin';
 
-      if (!isLoggedIn && !isOnLoginPage) return '/login';
-      if (isLoggedIn && isOnLoginPage) return '/';
+      if (!isLoggedIn && !isOnSigninPage) return '/signin';
+      if (isLoggedIn && isOnSigninPage) return '/';
       return null;
     },
     routes: [
@@ -63,7 +63,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OrganizationSelectionScreen(),
       ),
       GoRoute(
-        path: '/login',
+        path: '/signin',
         builder: (context, state) => const SigninScreen(),
       ),
       GoRoute(
