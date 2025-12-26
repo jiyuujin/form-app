@@ -1,8 +1,7 @@
 name: form_app_monorepo
-repository: https://github.com/your-org/survey-app
-
 packages:
-  - packages/**
+  - apps/*
+  - packages/*
 
 command:
   bootstrap:
@@ -24,4 +23,11 @@ scripts:
     exec:
       concurrency: 1
     packageFilters:
-      scope: '*form_app*'
+      scope: 'form_app'
+  
+  clean:
+    run: flutter clean
+    exec:
+      concurrency: 1
+
+sdkPath: .fvm/flutter_sdk
