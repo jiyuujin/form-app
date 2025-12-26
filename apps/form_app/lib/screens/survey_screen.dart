@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +20,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
   final Map<String, dynamic> _answers = {};
   Survey? _survey;
   bool _isLoading = true;
+  bool _isSubmitting = false;
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -29,19 +32,12 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
   }
 
   Future<void> _loadSurvey() async {
+    setState(() => _isLoading = true);
+
     try {
-      // ToDo: 特定の survey を取得する API が必要
-      final orgId = LocalStorageService.getSelectedOrganization();
-      if (orgId != null) {
-        final surveys = await FirebaseService.getSurveysByOrganization(orgId);
-        _survey = surveys.firstWhere((s) => s.id == widget.surveyId);
-      }
+      _survey = await FirebaseService.getSurveyById(widget.surveyId);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('アンケートの読み込みに失敗しました: $e')),
-        );
-      }
+      print(e.toString());
     } finally {
       setState(() => _isLoading = false);
     }
@@ -56,33 +52,78 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
 
   Future<void> _saveDraft() async {
     await LocalStorageService.saveDraftResponse(widget.surveyId, _answers);
+    _showSnackBar('下書きを保存しました');
+  }
+
+  void _showSnackBar(String message) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
+  }
+
+  bool _validateCurrentQuestion() {
+    final question = _survey!.questions[_currentPage];
+    if (question.isRequired &&
+        (_answers[question.id] == null ||
+         (_answers[question.id] is String &&
+          (_answers[question.id] as String).isEmpty))) {
+      _showSnackBar('この質問は必須です');
+      return false;
+    }
+    return true;
+  }
+
+  bool _validateAll() {
+    for (final question in _survey!.questions) {
+      if (question.isRequired &&
+          (_answers[question.id] == null ||
+           (_answers[question.id] is String &&
+            (_answers[question.id] as String).isEmpty))) {
+        _showSnackBar('未回答の必須質問があります');
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> _submitSurvey() async {
+    if (_isSubmitting) return;
+    if (!_validateAll()) return;
+
+    setState(() => _isSubmitting = true);
+
     try {
+      final completed =
+          LocalStorageService.isSurveyCompleted(widget.surveyId);
+      if (completed) {
+        throw Exception('このアンケートは既に回答済みです');
+      }
+
+      final deviceId = await LocalStorageService.deviceId;
+      final responseId = '${widget.surveyId}_$deviceId';
+
       final response = SurveyResponse(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: responseId,
         surveyId: widget.surveyId,
         answers: _answers,
         submittedAt: DateTime.now(),
       );
 
       await FirebaseService.submitSurveyResponse(response);
+
       await LocalStorageService.markSurveyCompleted(widget.surveyId);
       await LocalStorageService.clearDraftResponse(widget.surveyId);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('アンケートを送信しました！')),
-        );
-        context.go('/home');
-      }
+      _showSnackBar('アンケートを送信しました！');
+      if (mounted) context.go('/home');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('送信に失敗しました: $e')),
-        );
-      }
+      _showSnackBar('送信に失敗しました: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -113,6 +154,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
       ),
       body: PageView.builder(
         controller: _pageController,
+        physics: const ClampingScrollPhysics(), // スワイプが少し安定
         itemCount: _survey!.questions.length,
         onPageChanged: (page) => setState(() => _currentPage = page),
         itemBuilder: (context, index) {
@@ -124,21 +166,39 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
               children: [
                 LinearProgressIndicator(
                   value: (index + 1) / _survey!.questions.length,
+                  color: Theme.of(context).primaryColor,
+                  backgroundColor: Colors.grey.shade300,
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  '質問 ${index + 1} / ${_survey!.questions.length}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      '質問 ${index + 1} / ${_survey!.questions.length}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    if (question.isRequired)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8),
+                        child: Text(
+                          '*必須',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   question.text,
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 20),
-                Expanded(
-                  child: _buildQuestionWidget(question),
-                ),
+                Expanded(child: _buildQuestionWidget(question)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -151,19 +211,35 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
                         child: const Text('前へ'),
                       )
                     else
-                      const SizedBox(),
+                      const SizedBox(width: 100),
                     if (index < _survey!.questions.length - 1)
                       ElevatedButton(
-                        onPressed: () => _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        ),
+                        onPressed: _validateCurrentQuestion()
+                            ? () => _pageController.nextPage(
+                                  duration:
+                                      const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                )
+                            : null,
                         child: const Text('次へ'),
                       )
                     else
-                      ElevatedButton(
-                        onPressed: _submitSurvey,
-                        child: const Text('送信'),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: _isSubmitting ? null : _submitSurvey,
+                          child: _isSubmitting
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  '送信',
+                                  style: TextStyle(fontSize: 18),
+                                ),
+                        ),
                       ),
                   ],
                 ),
