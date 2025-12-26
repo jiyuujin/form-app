@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,5 +54,26 @@ class LocalStorageService {
 
   static String? getSelectedOrganization() {
     return _prefs?.getString('selected_organization');
+  }
+
+  static bool isSurveyCompleted(String surveyId) {
+    final completed = getCompletedSurveys();
+    return completed.contains(surveyId);
+  }
+
+  static Future<String> get deviceId async {
+    const key = 'device_id';
+    final existing = _prefs?.getString(key);
+    if (existing != null) return existing;
+ 
+    final newId = _generateRandomId();
+    await _prefs?.setString(key, newId);
+    return newId;
+  }
+
+  static String _generateRandomId([int length = 16]) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final rand = Random();
+    return List.generate(length, (_) => chars[rand.nextInt(chars.length)]).join();
   }
 }

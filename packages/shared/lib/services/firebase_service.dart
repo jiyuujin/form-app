@@ -29,19 +29,15 @@ class FirebaseService {
   }
 
   static Future<List<Survey>> getSurveysByOrganization(String organizationId) async {
-    try {
-      final snapshot = await _firestore
-          .collection('surveys')
-          .where('organizationId', isEqualTo: organizationId)
-          .where('isActive', isEqualTo: true)
-          .get();
-      
-      return snapshot.docs
-          .map((doc) => Survey.fromJson({...doc.data(), 'id': doc.id}))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to load surveys: $e');
-    }
+    final snapshot = await _firestore
+        .collection('surveys')
+        .where('organizationId', isEqualTo: organizationId)
+        .where('isActive', isEqualTo: true)
+        .get();
+    print('surveys fetched: ${snapshot.docs.length}');
+    return snapshot.docs
+        .map((doc) => Survey.fromJson({...doc.data(), 'id': doc.id}))
+        .toList();
   }
 
   static Future<void> createSurvey(Survey survey) async {
@@ -49,6 +45,23 @@ class FirebaseService {
       await _firestore.collection('surveys').doc(survey.id).set(survey.toJson());
     } catch (e) {
       throw Exception('Failed to create survey: $e');
+    }
+  }
+
+  static Future<void> addSurvey(Map<String, dynamic> data) async {
+    try {
+      final doc = _firestore.collection('surveys').doc();
+      await doc.set({...data, 'id': doc.id});
+    } catch (e) {
+      throw Exception('Failed to add survey: $e');
+    }
+  }
+
+  static Future<void> deleteSurvey(String surveyId) async {
+    try {
+      await _firestore.collection('surveys').doc(surveyId).delete();
+    } catch (e) {
+      throw Exception('Failed to delete survey: $e');
     }
   }
 
@@ -78,6 +91,18 @@ class FirebaseService {
     }
   }
 
+  static Future<Survey?> getSurveyById(String surveyId) async {
+    final doc =
+        await FirebaseFirestore.instance.collection('surveys').doc(surveyId).get();
+
+    if (!doc.exists) return null;
+
+    return Survey.fromJson({
+      ...doc.data()!,
+      'id': doc.id,
+    });
+  }
+
   static Future<Map<String, dynamic>> getSurveyAnalytics(String surveyId) async {
     try {
       final responses = await getSurveyResponses(surveyId);
@@ -94,9 +119,9 @@ class FirebaseService {
           if (!questionAnalytics.containsKey(questionId)) {
             questionAnalytics[questionId] = <String, int>{};
           }
-          
+
           final answerStr = answer.toString();
-          questionAnalytics[questionId][answerStr] = 
+          questionAnalytics[questionId][answerStr] =
               (questionAnalytics[questionId][answerStr] ?? 0) + 1;
         });
       }
@@ -107,6 +132,14 @@ class FirebaseService {
       };
     } catch (e) {
       throw Exception('Failed to load analytics: $e');
+    }
+  }
+
+  static Future<void> updateSurvey(String surveyId, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('surveys').doc(surveyId).update(data);
+    } catch (e) {
+      throw Exception('Failed to update survey: $e');
     }
   }
 }
