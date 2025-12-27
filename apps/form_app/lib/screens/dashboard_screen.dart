@@ -100,8 +100,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _saveChanges() async {
     if (_survey == null) return;
-    await FirebaseService.updateSurvey(_survey!.id, _survey!.toJson());
-    _loadData(); // 保存後に再読み込み
+
+    final surveyData = _survey!.toJson();
+    surveyData['questions'] = _survey!.questions.map((q) => q.toJson()).toList();
+
+    await FirebaseService.updateSurvey(_survey!.id, surveyData);
+    _loadData();
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('質問を保存しました')));
   }
@@ -123,7 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final totalResponses = _analytics['totalResponses'] ?? 0;
     final questionAnalytics =
-        _analytics['questionAnalytics'] as Map<String, dynamic>? ?? {};
+        _analytics['questionAnalytics'] as Map<dynamic, dynamic>? ?? {};
 
     return Scaffold(
       appBar: AppBar(
@@ -149,7 +153,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   Widget content;
                   if (q.type == QuestionType.text) {
-                    final responses = data['responses'] as List<dynamic>? ?? [];
+                    // デバッグ: データ構造を確認
+                    print('Text question data: $data');
+                    
+                    // 複数のキー名を試す
+                    List<dynamic> responses = [];
+                    if (data.containsKey('responses')) {
+                      responses = data['responses'] as List<dynamic>? ?? [];
+                    } else if (data.containsKey('answers')) {
+                      responses = data['answers'] as List<dynamic>? ?? [];
+                    } else {
+                      // データ全体をリストとして取得を試みる
+                      responses = data.values
+                          .where((v) => v is String)
+                          .toList();
+                    }
+                    
                     content = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -158,9 +177,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 8),
                         if (responses.isEmpty)
-                          const Text('回答なし')
+                          Text('回答なし (取得データ: ${data.keys.join(", ")})')
                         else
-                          ...responses.map((r) => Text('- $r')).toList(),
+                          ...responses.map((r) => Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text('- ${r.toString()}'),
+                              )).toList(),
                       ],
                     );
                   } else {
@@ -227,7 +249,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// --- QuestionDialog と SurveyCopy はそのまま ---
 class QuestionDialog extends StatefulWidget {
   final Question? question;
   const QuestionDialog({super.key, this.question});

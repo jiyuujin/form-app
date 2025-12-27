@@ -97,8 +97,7 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final completed =
-          LocalStorageService.isSurveyCompleted(widget.surveyId);
+      final completed = LocalStorageService.isSurveyCompleted(widget.surveyId);
       if (completed) {
         throw Exception('このアンケートは既に回答済みです');
       }
@@ -114,12 +113,10 @@ class _SurveyScreenState extends ConsumerState<SurveyScreen> {
       );
 
       await FirebaseService.submitSurveyResponse(response);
-
       await LocalStorageService.markSurveyCompleted(widget.surveyId);
       await LocalStorageService.clearDraftResponse(widget.surveyId);
 
-      _showSnackBar('アンケートを送信しました！');
-      if (mounted) context.go('/home');
+      if (mounted) context.go('/thank-you');
     } catch (e) {
       _showSnackBar('送信に失敗しました: $e');
     } finally {

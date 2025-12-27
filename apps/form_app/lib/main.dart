@@ -7,6 +7,7 @@ import 'package:form_app/screens/organization_selection_screen.dart';
 import 'package:form_app/screens/signin_screen.dart';
 import 'package:form_app/screens/splash_screen.dart';
 import 'package:form_app/screens/survey_screen.dart';
+import 'package:form_app/screens/thank_you_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared/services/firebase_service.dart';
 import 'package:shared/services/local_storage_service.dart';
@@ -68,10 +69,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final isLoggedIn = authState.value != null;
-
       // ログイン不要ルート
       final isPublicRoute =
-          location == '/signin' || location.startsWith('/survey/');
+          location == '/signin' || 
+          location.startsWith('/survey/') ||
+          location == '/thank-you';  // ← ここに追加
 
       // splash からの遷移先制御
       if (location == '/splash') {
@@ -118,6 +120,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SurveyScreen(
           surveyId: state.pathParameters['id']!,
         ),
+      ),
+      GoRoute(
+        path: '/thank-you',
+        builder: (context, state) => const ThankYouScreen(),
       ),
     ],
   );
