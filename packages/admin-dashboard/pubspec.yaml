@@ -4,22 +4,22 @@ version: 1.0.0+1
 publish_to: none
 
 environment:
-  sdk: '>=3.1.3 <4.0.0'
+  sdk: '>=3.10.4 <4.0.0' # Flutter 3.38.5
 
 dependencies:
-  csv: ^5.0.2
+  csv: ^6.0.0
   data_table_2: ^2.5.12
-  file_picker: ^6.1.1
-  fl_chart: ^0.64.0
+  file_picker: ^10.3.8
+  fl_chart: ^1.1.1
   flutter:
     sdk: flutter
-  flutter_riverpod: ^2.4.9
-  go_router: ^13.0.0
+  flutter_riverpod: ^3.1.0
+  go_router: ^17.0.1
   shared:
     path: ../shared
 
 dev_dependencies:
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
 
